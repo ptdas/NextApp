@@ -21,13 +21,13 @@ More information about frappe bench [click here](https://github.com/frappe/bench
 1. Getting the app from github  
 You must run bench on your frappe directory
 ```
-bench get-app salesforce https://github.com/bobzz-zone/eSalesApp
+bench get-app nextapp https://github.com/ptdas/NextApp
 ```
 
 2. Install the app  
 You need to install the app into your site
 ```
-bench --site [sitename] install-app erpnext
+bench --site [sitename] install-app nextapp
 ```
 sitename : your existing sitename
 
