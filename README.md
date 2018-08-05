@@ -1,5 +1,5 @@
 # NextApp
-API Connector for ERPNext in Next App
+API Connector for ERPNext in Next App (Next Sales)
 
 # One installed, All connected
 This is a bench app module by Frappe Bench, you must have Frappe Environment before to install this bench app module
