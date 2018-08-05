@@ -786,12 +786,12 @@ def get_sales_invoice(status='',query='',sort='',page=0):
 
 @frappe.whitelist(allow_guest=False)
 def get_item(is_sales_item='1',is_stock_item='1',ref='',page='0'):
-	data = frappe.db.sql("SELECT * FROM `tabItem` WHERE is_sales_item = {} AND is_stock_item = {} AND (item_name LIKE '{}%' OR item_code LIKE '{}%') LIMIT 20 OFFSET {}".format(is_sales_item, is_stock_item,ref,ref,page),as_dict=1)
+	data = frappe.db.sql("SELECT * FROM `tabItem` WHERE has_variants = 0 AND is_sales_item = {} AND is_stock_item = {} AND (item_name LIKE '{}%' OR item_code LIKE '{}%') LIMIT 20 OFFSET {}".format(is_sales_item, is_stock_item,ref,ref,page),as_dict=1)
 
 	for row in data:
 		row['product_bundle_item'] = list("")
 		if (row['is_stock_item'] == 0):
-			fetchBundleItem = frappe.db.sql("SELECT * FROM `tabProduct Bundle Item` WHERE parent = '{}'".format(row['item_code']),as_dict=True)
+			fetchBundleItem = frappe.db.sql("SELECT * FROM has_variants = 0 AND `tabProduct Bundle Item` WHERE parent = '{}'".format(row['item_code']),as_dict=True)
 			row['product_bundle_item'] = fetchBundleItem
 	return data
 
