@@ -785,14 +785,52 @@ def get_sales_invoice(status='',query='',sort='',page=0):
 	return data
 
 @frappe.whitelist(allow_guest=False)
-def get_item(is_sales_item='1',is_stock_item='1',ref='',page='0'):
-	data = frappe.db.sql("SELECT * FROM `tabItem` WHERE has_variants = 0 AND is_sales_item = {} AND is_stock_item = {} AND (item_name LIKE '{}%' OR item_code LIKE '{}%') LIMIT 20 OFFSET {}".format(is_sales_item, is_stock_item,ref,ref,page),as_dict=1)
+def get_item(is_sales_item='1',is_stock_item='1',ref='',sort='',page='0'):
+	seen = ""
+	data = []
+
+	filters = ["item_name", "item_code"]
+
+	for f in filters:
+		data_filter = frappe.get_list("Item", 
+							fields="*", 
+							filters = 
+							{
+								"has_variants": 0,
+								"is_sales_item":is_sales_item,
+								"is_stock_item":is_stock_item,
+								f: ("LIKE", "%{}%".format(ref))
+							},
+							order_by=sort,
+							limit_page_length=LIMIT_PAGE,
+							limit_start=page)
+		temp_seen, result_list = distinct(seen,data_filter)
+		seen = temp_seen
+		data.extend(result_list)
 
 	for row in data:
 		row['product_bundle_item'] = list("")
 		if (row['is_stock_item'] == 0):
-			fetchBundleItem = frappe.db.sql("SELECT * FROM has_variants = 0 AND `tabProduct Bundle Item` WHERE parent = '{}'".format(row['item_code']),as_dict=True)
-			row['product_bundle_item'] = fetchBundleItem
+			fetchBundleItem = frappe.get_list("Product Bundle Item", 
+							fields="*", 
+							filters = 
+							{
+								"parent":row['item_code']
+							},
+							limit_page_length=1000000)
+			data_bundle_item = list("")
+			for bundleItem in fetchBundleItem:
+				fetchBundleItemDetails = frappe.get_list("Item", 
+							fields="item_name", 
+							filters = 
+							{
+								"item_code":bundleItem['item_code']
+							})
+				bundleItem['item_name'] = ""
+				if (len(fetchBundleItemDetails) > 0):
+					bundleItem['item_name'] = fetchBundleItemDetails[0]['item_name']
+				data_bundle_item.append(bundleItem)
+			row['product_bundle_item'] = data_bundle_item
 	return data
 
 
@@ -880,10 +918,73 @@ def get_lead(status='',query='',sort='',page=0):
 
 	return data
 
+
+@frappe.whitelist(allow_guest=False)
+def get_quotation(status='',query='',sort='',page=0):
+	quotation_statuses = status.split(',')
+	filters = ['name','customer_name','contact_email']
+
+	seen_quotations = ""
+	for f in filters:
+		data_filter = frappe.get_list("Quotation", 
+							fields="*", 
+							filters = 
+							{
+								"status": ("IN", quotation_statuses),
+								"quotation_to": "Customer",
+								f: ("LIKE", "%{}%".format(query))
+							},
+							order_by=sort,
+							limit_page_length=LIMIT_PAGE,
+							limit_start=page)
+		temp_seen_quotations, result_list = distinct(seen_quotations,data_filter)
+		seen_quotations = temp_seen_quotations
+		data['quotations'].extend(result_list)
+
+	return data
+
+
+@frappe.whitelist(allow_guest=False)
+def get_opportunity(status='',query='',sort='',page=0):
+	opportunity_statuses = status.split(',')
+	filters = ['name','customer_name','contact_email']
+
+	seen_opportunities = ""
+	for f in filters:
+		data_filter = frappe.get_list("Opportunity", 
+							fields="*", 
+							filters = 
+							{
+								"status": ("IN", opportunity_statuses),
+								"enquiry_from": "Customer",
+								f: ("LIKE", "%{}%".format(query))
+							},
+							order_by=sort,
+							limit_page_length=LIMIT_PAGE,
+							limit_start=page)
+		temp_seen_opportunities, result_list = distinct(seen_opportunities,data_filter)
+		seen_opportunities = temp_seen_opportunities
+		data['opportunities'].extend(result_list)
+
+	return data
+
 @frappe.whitelist(allow_guest=False)
 def get_lead_item(lead_no=''):
-	fetch_opportunity = frappe.db.sql("SELECT * FROM `tabOpportunity` WHERE lead = '{}'".format(lead_no),as_dict=1)
-	fetch_quotation = frappe.db.sql("SELECT * FROM `tabQuotation` WHERE lead = '{}'".format(lead_no),as_dict=1)
+	
+	fetch_opportunity = frappe.get_list("Opportunity", 
+							fields="*", 
+							filters = 
+							{
+								"lead": lead_no
+							},
+							limit_page_length=1000)
+	fetch_quotation = frappe.get_list("Quotation", 
+							fields="*", 
+							filters = 
+							{
+								"lead": lead_no
+							},
+							limit_page_length=1000)
 	data = dict()
 	data['opportunity'] = fetch_opportunity
 	data['quotation'] = fetch_quotation
@@ -892,7 +993,9 @@ def get_lead_item(lead_no=''):
 
 @frappe.whitelist(allow_guest=False)
 def get_user():
-	data = frappe.db.sql("SELECT * FROM `tabUser` WHERE name != 'Administrator'",as_dict=1)
+	data = frappe.get_list("User", 
+				fields="*",
+				limit_page_length=1000)
 	return data
 
 
