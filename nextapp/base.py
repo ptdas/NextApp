@@ -15,6 +15,12 @@ from copy import copy
 from six.moves.urllib.parse import unquote
 from six import text_type
 
+
+#firebase
+def normalize_firebase_string(token):
+	return token.replace("http://","").replace("https://","").replace(" ", "_").replace("-", "_").replace("(", "").replace(")", "").replace(".", "_").replace("@", "_").replace("-","_") 
+
+
 def validate_method(request,allow):
 	response={}
 

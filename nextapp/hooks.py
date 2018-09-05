@@ -79,33 +79,22 @@ app_license = "ptdas@copyright"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-#	}
-# }
+doc_events = {
+	"Leave Application": {
+		"after_insert": "nextapp.next_app.next_ess.notification.leave_application_approval",
+		"on_submit": "nextapp.next_app.next_ess.notification.leave_application_confirmation"
+	},
+	"Expense Claim": {
+		"after_insert": "nextapp.next_app.next_ess.notification.expense_claim_approval",
+		"on_submit": "nextapp.next_app.next_ess.notification.expense_claim_confirmation"
+	} 
+}
 
 # Scheduled Tasks
 # ---------------
 
 # scheduler_events = {
-# 	"all": [
-# 		"nextapp.tasks.all"
-# 	],
-# 	"daily": [
-# 		"nextapp.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"nextapp.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"nextapp.tasks.weekly"
-# 	]
-# 	"monthly": [
-# 		"nextapp.tasks.monthly"
-# 	]
+	
 # }
 
 # Testing
