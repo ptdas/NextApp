@@ -621,7 +621,6 @@ def get_sales_order(status='',query='',sort='',page=0):
 							fields="*", 
 							filters = 
 							{
-								"docstatus": 1,
 								"status": ("IN", statuses),
 								f: ("LIKE", "%{}%".format(query))
 							},
