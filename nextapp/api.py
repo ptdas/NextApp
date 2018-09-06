@@ -107,11 +107,11 @@ def get_metadata(employee='%',company='',approver='%',is_sales="0",is_employee="
 							order_by="name")
 		data['currency'] = fetchCurrency
 
+		#delivery note
+
+
 		#sales order
 		status = ['Draft', 'To Deliver and Bill','To Bill','To Deliver','Completed','Cancelled','Closed']
-
-		
-
 		data['sales_order'] = dict()
 		dataSO = data['sales_order']
 		dataSO['count'] = dict()
@@ -168,6 +168,10 @@ def get_metadata(employee='%',company='',approver='%',is_sales="0",is_employee="
 									 )
 		data['daily_net_sales'] = fetchNetSales
 
+		#today total sales
+		#frappe.db.sql("")
+
+
 
 		fetchPrintFormat = frappe.db.sql("SELECT name, doc_type FROM `tabPrint Format` WHERE disabled = 0",as_dict=1)
 
@@ -175,7 +179,18 @@ def get_metadata(employee='%',company='',approver='%',is_sales="0",is_employee="
 
 	return data
 
+@frappe.whitelist(allow_guest=False)
+def get_sales_report():
+	return "report"
+	#daily total sales
+	#frappe.db.sql("SELECT...",as_dict=1)
 
+	#weekly total sales
+	#frappe.db.sql("SELECT...",as_dict=1)
+
+
+	#monthly total sales
+	#frappe.db.sql("SELECT...",as_dict=1)
 
 
 # LEAVE APPLICATION
@@ -652,7 +667,6 @@ def get_sales_invoice(status='',query='',sort='',page=0):
 							fields="*", 
 							filters = 
 							{
-								"docstatus": 1,
 								"status": ("IN", statuses),
 								f: ("LIKE", "%{}%".format(query))
 							},
@@ -895,13 +909,14 @@ def check_item(item_code='',query=""):
 										})
 	data_prices = []
 	for data_price_list in data_price_lists:
-		data_price = frappe.get_list("Item Price",
-										fields="price_list,price_list_rate",
-										filters={
-											"item_code":item_code,
-											"price_list":data_price_list["name"]
-										},
-										limit_page_length=100000)
+		data_price = frappe.db.sql("SELECT price_list,price_list_rate FROM `tabItem Price` WHERE item_code = '{}' AND price_list = '{}'".format(item_code,data_price_list["name"]),as_dict=True)
+		# data_price = frappe.get_list("Item Price",
+		# 								fields="price_list,price_list_rate",
+		# 								filters={
+		# 									"item_code":item_code,
+		# 									"price_list":data_price_list["name"]
+		# 								},
+		# 								limit_page_length=100000)
 		if (len(data_price) > 0):
 			data_prices.append(data_price[0])
 	data["item_price_list_rate"] = data_prices
