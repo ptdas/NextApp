@@ -14,7 +14,7 @@ from next_app.next_sales.validation import *
 from next_app.next_ess.validation import * 
 
 LIMIT_PAGE = 20
-API_VERSION = 1.3
+API_VERSION = 1.35
 
 @frappe.whitelist(allow_guest=True)
 def me():
@@ -622,6 +622,33 @@ def get_employee_advance(owner='%',employee='%', company='', status='',query='',
 		 
 	# return data
 
+# ========================================================CUSTOMER====================================================
+@frappe.whitelist(allow_guest=False)
+def get_customer(query='',sort='',page=0):
+	seen = ""
+	data = []
+	
+
+	filters = ["name", "customer_name","territory"]
+
+	for f in filters:
+		data_filter = frappe.get_list("Customer", 
+							fields="*", 
+							filters = 
+							{
+								f: ("LIKE", "%{}%".format(query))
+							},
+							order_by=sort,
+							limit_page_length=LIMIT_PAGE,
+							limit_start=page)
+		temp_seen, result_list = distinct(seen,data_filter)
+		for df in result_list:
+			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(df['name']),as_dict=1)
+			df['sales_persons'] = data_sales
+		seen = temp_seen
+		data.extend(result_list)
+	return data	
+
 # ========================================================SALES ORDER====================================================
 @frappe.whitelist(allow_guest=False)
 def get_sales_order(status='',query='',sort='',page=0):
@@ -643,6 +670,9 @@ def get_sales_order(status='',query='',sort='',page=0):
 							limit_page_length=LIMIT_PAGE,
 							limit_start=page)
 		temp_seen, result_list = distinct(seen,data_filter)
+		for df in result_list:
+			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(df['name']),as_dict=1)
+			df['sales_persons'] = data_sales
 		seen = temp_seen
 		data.extend(result_list)
 	return data
@@ -673,10 +703,10 @@ def get_sales_invoice(status='',query='',sort='',page=0):
 							order_by=sort,
 							limit_page_length=LIMIT_PAGE,
 							limit_start=page)
-		for df in data_filter:
+		temp_seen, result_list = distinct(seen,data_filter)
+		for df in result_list:
 			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(df['name']),as_dict=1)
 			df['sales_persons'] = data_sales
-		temp_seen, result_list = distinct(seen,data_filter)
 		seen = temp_seen
 		data.extend(result_list)
 	return data
