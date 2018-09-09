@@ -9,9 +9,9 @@ from base import validate_method
 from frappe.utils import get_fullname
 
 # CUSTOM METHOD
-from next_app.helper import *
-from next_app.next_sales.validation import *
-from next_app.next_ess.validation import * 
+from app.helper import *
+from app.nextsales.validation import *
+from app.nextess.validation import * 
 
 LIMIT_PAGE = 20
 API_VERSION = 1.35
@@ -108,7 +108,18 @@ def get_metadata(employee='%',company='',approver='%',is_sales="0",is_employee="
 		data['currency'] = fetchCurrency
 
 		#delivery note
-
+		status = ['Draft', 'To Bill','To Bill','Completed','Cancelled','Closed']
+		data['delivery_note'] = dict()
+		dataDN = data['delivery_note']
+		dataDN['count'] = dict()
+		dataCount = dataDN['count']
+		for stat in status:
+			fetch = frappe.get_list("Delivery Note", 
+								filters = 
+								{
+									"status": stat
+								})
+			dataCount[stat] = len(fetch)
 
 		#sales order
 		status = ['Draft', 'To Deliver and Bill','To Bill','To Deliver','Completed','Cancelled','Closed']
@@ -168,10 +179,6 @@ def get_metadata(employee='%',company='',approver='%',is_sales="0",is_employee="
 									 )
 		data['daily_net_sales'] = fetchNetSales
 
-		#today total sales
-		#frappe.db.sql("")
-
-
 
 		fetchPrintFormat = frappe.db.sql("SELECT name, doc_type FROM `tabPrint Format` WHERE disabled = 0",as_dict=1)
 
@@ -180,17 +187,53 @@ def get_metadata(employee='%',company='',approver='%',is_sales="0",is_employee="
 	return data
 
 @frappe.whitelist(allow_guest=False)
-def get_sales_report():
-	return "report"
+def get_sales_report(interval=0):
+
+	data = dict()
+	week = int(interval) * 7
+	month = int(interval) * 4
+	year = int(interval) * 6
 	#daily total sales
-	#frappe.db.sql("SELECT...",as_dict=1)
+	daily_SO = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS total, daily.day FROM (SELECT DATE(NOW()) - INTERVAL (1 + {}) DAY AS day UNION ALL SELECT DATE(NOW()) - INTERVAL (2 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (3 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (4 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (5 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (6 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (7 + {}) DAY) daily LEFT JOIN (SELECT SUM(si.rounded_total) AS total, si.posting_date FROM `tabSales Invoice` si GROUP BY si.posting_date) sales ON sales.posting_date = daily.day;".format(week, week, week, week, week, week, week),as_dict=1)
+	data["daily_SO"] = daily_SO
 
 	#weekly total sales
-	#frappe.db.sql("SELECT...",as_dict=1)
-
+	weekly_SO = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS total, weekly.week FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) WEEK, '%Y Week %u') AS week UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) WEEK, '%Y Week %u')) weekly LEFT JOIN (SELECT SUM(si.rounded_total) AS total, DATE_FORMAT(si.posting_date, '%Y Week %u') AS week FROM `tabSales Invoice` si GROUP BY (week)) sales ON sales.week = weekly.week;".format(month, month, month, month),as_dict=1)
+	data["weekly_SO"] = weekly_SO
 
 	#monthly total sales
-	#frappe.db.sql("SELECT...",as_dict=1)
+	monthly_SO = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS total, monthly.month FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) MONTH, '%Y-%M') AS month UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (5 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (6 + {}) MONTH, '%Y-%M')) monthly LEFT JOIN (SELECT SUM(si.rounded_total) AS total, DATE_FORMAT(si.posting_date, '%Y-%M') AS month FROM `tabSales Invoice` si GROUP BY (month)) sales ON sales.month = monthly.month;".format(year, year, year, year, year, year),as_dict=1)
+	data["monthly_SO"] = monthly_SO
+
+	return data
+
+# TOTAL SALES PER CUSTOMER
+@frappe.whitelist(allow_guest=False)
+def get_customer_sales(query='',last_day=0, sort='',page=0):
+	seen = ""
+	data = []
+	
+	filters = ["name", "customer_name"]
+
+	for f in filters:
+		data_filter = frappe.get_list("Customer", 
+							fields="*", 
+							filters = 
+							{
+								f: ("LIKE", "%{}%".format(query))
+							},
+							order_by=sort,
+							limit_page_length=LIMIT_PAGE,
+							limit_start=page)
+		temp_seen, result_list = distinct(seen,data_filter)
+		seen = temp_seen
+		data.extend(result_list)
+
+	for d in data:
+		fetchTotalSales  = frappe.db.sql("SELECT SUM(rounded_total) FROM `tabSales Invoice` WHERE customer_name = '{}' AND posting_date BETWEEN DATE(NOW()) - INTERVAL {} DAY AND NOW()".format(d["customer_name"],last_day))
+		d["total_sales"] = fetchTotalSales[0]
+
+	return data
 
 
 # LEAVE APPLICATION
