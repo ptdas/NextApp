@@ -167,6 +167,7 @@ def submit_sales_order(name):
 		doc = frappe.get_doc("Sales Order", name)
 		doc.docstatus = 1
 		doc.status = "To Deliver and Bill"
+		doc.save()
 		return doc
 	except:
 		return error_format(sys.exc_info()[0])
