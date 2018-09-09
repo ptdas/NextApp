@@ -13,6 +13,7 @@ import sys
 from app.helper import *
 from app.nextsales.validation import *
 from app.nextess.validation import * 
+from validation import *
 
 LIMIT_PAGE = 20
 API_VERSION = 1.35
@@ -159,16 +160,16 @@ def get_sales_report(interval=0):
 
 	return data
 
+
 @frappe.whitelist(allow_guest=False)
 def submit_sales_order(name):
 	try:
 		doc = frappe.get_doc("Sales Order", name)
 		doc.docstatus = 1
 		doc.status = "To Deliver and Bill"
-		doc.save()
 		return doc
 	except:
-		return sys.exc_info()[0]
+		return error_format(sys.exc_info()[0])
 
 @frappe.whitelist(allow_guest=False)
 def cancel_sales_order(name):
@@ -179,7 +180,7 @@ def cancel_sales_order(name):
 		doc.save()
 		return doc
 	except:
-		return sys.exc_info()[0]
+		return error_format(sys.exc_info()[0])
 
 # TOTAL SALES PER CUSTOMER
 @frappe.whitelist(allow_guest=False)
