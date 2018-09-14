@@ -94,7 +94,8 @@ def get_metadata():
 		fetch = frappe.get_list("Sales Order", 
 							filters = 
 							{
-								"delivery_status": stat
+								"delivery_status": stat,
+								"status":("<>","Draft")
 							})
 		dataCount[stat] = len(fetch)
 
@@ -104,7 +105,8 @@ def get_metadata():
 		fetch = frappe.get_list("Sales Order", 
 							filters = 
 							{
-								"billing_status": stat
+								"billing_status": stat,
+								"status":("<>","Draft")
 							})
 		dataCount[stat] = len(fetch)
 
