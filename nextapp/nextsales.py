@@ -95,7 +95,8 @@ def get_metadata():
 							filters = 
 							{
 								"delivery_status": stat,
-								"status":("!=","Draft")
+								"docstatus":1,
+								"status":("!=","Completed")
 							})
 		dataCount[stat] = len(fetch)
 
@@ -106,7 +107,8 @@ def get_metadata():
 							filters = 
 							{
 								"billing_status": stat,
-								"status":("!=","Draft")
+								"docstatus":1,
+								"status":("!=","Completed")
 							})
 		dataCount[stat] = len(fetch)
 
