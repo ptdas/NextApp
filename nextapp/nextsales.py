@@ -16,7 +16,7 @@ from app.nextess.validation import *
 from validation import *
 
 LIMIT_PAGE = 20
-API_VERSION = 1.35
+API_VERSION = 1.4
 
 @frappe.whitelist(allow_guest=True)
 def me():
@@ -140,23 +140,45 @@ def get_metadata():
 	return data
 
 @frappe.whitelist(allow_guest=False)
-def get_sales_report(interval=0):
+def get_sales_report(interval=0, tipe=''):
 
 	data = dict()
-	week = int(interval) * 7
-	month = int(interval) * 4
-	year = int(interval) * 6
-	#daily total sales
-	daily_SO = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS total, daily.day FROM (SELECT DATE(NOW()) - INTERVAL (1 + {}) DAY AS day UNION ALL SELECT DATE(NOW()) - INTERVAL (2 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (3 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (4 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (5 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (6 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (7 + {}) DAY) daily LEFT JOIN (SELECT SUM(si.rounded_total) AS total, si.posting_date FROM `tabSales Invoice` si GROUP BY si.posting_date) sales ON sales.posting_date = daily.day;".format(week, week, week, week, week, week, week),as_dict=1)
-	data["daily_SO"] = daily_SO
+	day = int(interval) * 7
+	week = int(interval) * 4
+	month = int(interval) * 6
 
-	#weekly total sales
-	weekly_SO = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS total, weekly.week FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) WEEK, '%Y Week %u') AS week UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) WEEK, '%Y Week %u')) weekly LEFT JOIN (SELECT SUM(si.rounded_total) AS total, DATE_FORMAT(si.posting_date, '%Y Week %u') AS week FROM `tabSales Invoice` si GROUP BY (week)) sales ON sales.week = weekly.week;".format(month, month, month, month),as_dict=1)
-	data["weekly_SO"] = weekly_SO
+	data['daily'] = []
+	data['weekly'] = []
+	data['monthly'] = []
 
-	#monthly total sales
-	monthly_SO = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS total, monthly.month FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) MONTH, '%Y-%M') AS month UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (5 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (6 + {}) MONTH, '%Y-%M')) monthly LEFT JOIN (SELECT SUM(si.rounded_total) AS total, DATE_FORMAT(si.posting_date, '%Y-%M') AS month FROM `tabSales Invoice` si GROUP BY (month)) sales ON sales.month = monthly.month;".format(year, year, year, year, year, year),as_dict=1)
-	data["monthly_SO"] = monthly_SO
+	if (tipe == 'daily' or tipe == ''):
+		#daily total sales
+		daily = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS Y, daily.day AS X FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) DAY,'%e %b') AS day UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (5 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (6 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (7 + {}) DAY,'%e %b')) daily LEFT JOIN (SELECT SUM(si.rounded_total * si.conversion_rate) AS total, si.posting_date FROM `tabSales Invoice` si WHERE docstatus != 0 AND si.posting_date >= (SELECT DATE(NOW()) - INTERVAL (7 + {}) DAY) AND si.posting_date <= (SELECT DATE(NOW()) - INTERVAL (1 + {}) DAY) GROUP BY si.posting_date) sales ON sales.posting_date = daily.day;".format(day, day, day, day, day, day, day, day, day),as_dict=1)
+		data["daily"] = daily
+
+	if (tipe == 'weekly' or tipe == ''):
+		#weekly total sales
+		# weekly = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS Y, weekly.week AS X FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) WEEK, '%Y Week %u') AS week UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) WEEK, '%Y Week %u')) weekly LEFT JOIN (SELECT SUM(si.rounded_total * si.conversion_rate) AS total, DATE_FORMAT(si.posting_date, '%Y Week %u') AS week FROM `tabSales Invoice` si WHERE docstatus != 0 AND si.posting_date >= (SELECT DATE(NOW() - INTERVAL (4 + {}) WEEK)) AND si.posting_date <= (SELECT DATE(NOW() - INTERVAL (1 + {}) WEEK)) GROUP BY (week)) sales ON sales.week = weekly.week;".format(week, week, week, week, week, week),as_dict=1)
+		raw_weekly = frappe.db.sql("SELECT SUM(rounded_total * conversion_rate) as total, WEEK(posting_date, 5) - WEEK(DATE_SUB(posting_date, INTERVAL DAYOFMONTH(posting_date) - 1 DAY), 5) as week_of_the_month FROM `tabSales Invoice` WHERE MONTH(posting_date) = MONTH(NOW()) - {} GROUP BY week_of_the_month ORDER BY week_of_the_month ASC;".format(interval),as_list=1)
+		X = ['','','','','']
+		Y = [0,0,0,0,0]
+
+		for rw in raw_weekly:
+			Y[rw[1]] = rw[0]
+
+		weekly = []
+		n = len(X)
+		for i in range(n):
+			point = dict()
+			point['X'] = str(n-i-1+1)
+			point['Y'] = Y[n-i-1]
+			weekly.append(point)
+		data["weekly"] = weekly
+
+	if (tipe == 'monthly' or tipe == ''):
+		#monthly total sales
+		monthly = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS Y, monthly.month AS X FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) MONTH, '%b \\'%y') AS month UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) MONTH, '%b \\'%y') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) MONTH, '%b \\'%y') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) MONTH, '%b \\'%y') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (5 + {}) MONTH, '%b \\'%y') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (6 + {}) MONTH, '%b \\'%y')) monthly LEFT JOIN (SELECT SUM(si.rounded_total * si.conversion_rate) AS total, DATE_FORMAT(si.posting_date, '%b \\'%y') AS month FROM `tabSales Invoice` si WHERE docstatus != 0 AND si.posting_date >= (SELECT DATE(NOW() - INTERVAL (6 + {}) MONTH)) AND si.posting_date <= (SELECT DATE(NOW() - INTERVAL (1 + {}) MONTH)) GROUP BY (month)) sales ON sales.month = monthly.month;".format(month, month, month, month, month, month, month, month),as_dict=1)
+		data["monthly"] = monthly
 
 	return data
 

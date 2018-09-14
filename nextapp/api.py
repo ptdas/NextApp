@@ -194,16 +194,16 @@ def get_sales_report(interval=0):
 	month = int(interval) * 4
 	year = int(interval) * 6
 	#daily total sales
-	daily_SO = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS total, daily.day FROM (SELECT DATE(NOW()) - INTERVAL (1 + {}) DAY AS day UNION ALL SELECT DATE(NOW()) - INTERVAL (2 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (3 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (4 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (5 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (6 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (7 + {}) DAY) daily LEFT JOIN (SELECT SUM(si.rounded_total) AS total, si.posting_date FROM `tabSales Invoice` si GROUP BY si.posting_date) sales ON sales.posting_date = daily.day;".format(week, week, week, week, week, week, week),as_dict=1)
-	data["daily_SO"] = daily_SO
+	daily = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS Y, daily.day AS X FROM (SELECT DATE(NOW()) - INTERVAL (1 + {}) DAY AS day UNION ALL SELECT DATE(NOW()) - INTERVAL (2 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (3 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (4 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (5 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (6 + {}) DAY UNION ALL SELECT DATE(NOW()) - INTERVAL (7 + {}) DAY) daily LEFT JOIN (SELECT SUM(si.rounded_total) AS total, si.posting_date FROM `tabSales Invoice` si GROUP BY si.posting_date) sales ON sales.posting_date = daily.day;".format(week, week, week, week, week, week, week),as_dict=1)
+	data["daily"] = daily
 
 	#weekly total sales
-	weekly_SO = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS total, weekly.week FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) WEEK, '%Y Week %u') AS week UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) WEEK, '%Y Week %u')) weekly LEFT JOIN (SELECT SUM(si.rounded_total) AS total, DATE_FORMAT(si.posting_date, '%Y Week %u') AS week FROM `tabSales Invoice` si GROUP BY (week)) sales ON sales.week = weekly.week;".format(month, month, month, month),as_dict=1)
-	data["weekly_SO"] = weekly_SO
+	weekly = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS Y, weekly.week AS X FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) WEEK, '%Y Week %u') AS week UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) WEEK, '%Y Week %u') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) WEEK, '%Y Week %u')) weekly LEFT JOIN (SELECT SUM(si.rounded_total) AS total, DATE_FORMAT(si.posting_date, '%Y Week %u') AS week FROM `tabSales Invoice` si GROUP BY (week)) sales ON sales.week = weekly.week;".format(month, month, month, month),as_dict=1)
+	data["weekly"] = weekly
 
 	#monthly total sales
-	monthly_SO = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS total, monthly.month FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) MONTH, '%Y-%M') AS month UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (5 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (6 + {}) MONTH, '%Y-%M')) monthly LEFT JOIN (SELECT SUM(si.rounded_total) AS total, DATE_FORMAT(si.posting_date, '%Y-%M') AS month FROM `tabSales Invoice` si GROUP BY (month)) sales ON sales.month = monthly.month;".format(year, year, year, year, year, year),as_dict=1)
-	data["monthly_SO"] = monthly_SO
+	monthly = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS Y, monthly.month AS X FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) MONTH, '%Y-%M') AS month UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (5 + {}) MONTH, '%Y-%M') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (6 + {}) MONTH, '%Y-%M')) monthly LEFT JOIN (SELECT SUM(si.rounded_total) AS total, DATE_FORMAT(si.posting_date, '%Y-%M') AS month FROM `tabSales Invoice` si GROUP BY (month)) sales ON sales.month = monthly.month;".format(year, year, year, year, year, year),as_dict=1)
+	data["monthly"] = monthly
 
 	return data
 
