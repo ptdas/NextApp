@@ -88,6 +88,26 @@ def get_metadata():
 							})
 		dataCount[stat] = len(fetch)
 
+	#sales order delivery status
+	status = ['Not Delivered', 'Fully Delivered', 'Partly Delivered']
+	for stat in status:
+		fetch = frappe.get_list("Sales Order", 
+							filters = 
+							{
+								"delivery_status": stat
+							})
+		dataCount[stat] = len(fetch)
+
+	#sales order billing status
+	status = ['Not Billed','Fully Billed','Partly Billed','Closed']
+	for stat in status:
+		fetch = frappe.get_list("Sales Order", 
+							filters = 
+							{
+								"billing_status": stat
+							})
+		dataCount[stat] = len(fetch)
+
 	#invoice
 	status = ['Overdue','Unpaid','Paid']
 	data['invoice'] = dict()
