@@ -165,7 +165,8 @@ def get_sales_report(interval=0, tipe=''):
 
 		for rw in raw_weekly:
 			if (len(rw) == 2):
-				Y[rw[1]] = rw[0]
+				if (rw[1] < len(Y)):
+					Y[rw[1]] = rw[0]
 
 		weekly = []
 		n = len(X)
