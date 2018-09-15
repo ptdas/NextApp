@@ -254,8 +254,8 @@ def get_customer_sales(query='',last_day=0, sort='',page=0):
 		data.extend(result_list)
 
 	for d in data:
-		fetchTotalSales  = frappe.db.sql("SELECT SUM(rounded_total) FROM `tabSales Invoice` WHERE customer_name = '{}' AND posting_date BETWEEN DATE(NOW()) - INTERVAL {} DAY AND NOW()".format(d["customer_name"],last_day))
-		d["total_sales"] = fetchTotalSales[0]
+		fetchTotalSales  = frappe.db.sql("SELECT NVL(SUM(rounded_total),0) FROM `tabSales Invoice` WHERE customer_name = '{}' AND posting_date BETWEEN DATE(NOW()) - INTERVAL {} DAY AND NOW()".format(d["customer_name"],last_day))
+		d["last_total_sales"] = fetchTotalSales[0][0]
 
 	return data
 
