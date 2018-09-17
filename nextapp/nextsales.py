@@ -101,7 +101,7 @@ def get_metadata():
 		dataCount[stat] = len(fetch)
 
 	#sales order billing status
-	status = ['Not Billed','Fully Billed','Partly Billed','Closed']
+	status = ['Not Billed','Fully Billed','Partly Billed']
 	for stat in status:
 		fetch = frappe.get_list("Sales Order", 
 							filters = 
@@ -111,6 +111,10 @@ def get_metadata():
 								"status":("!=","Completed")
 							})
 		dataCount[stat] = len(fetch)
+
+	so_data = frappe.get_list("Sales Order")
+	dataCount['Total'] = len(so_data)
+
 
 	#invoice
 	status = ['Overdue','Unpaid','Paid']
