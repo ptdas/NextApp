@@ -96,7 +96,7 @@ def get_metadata():
 							{
 								"delivery_status": stat,
 								"docstatus":1,
-								"status":(" not in",["Draft, Closed, Completed, Cancelled"])
+								"status":("not in",["Draft", "Closed", "Completed", "Cancelled"])
 							})
 		dataCount[stat] = len(fetch)
 
@@ -108,7 +108,7 @@ def get_metadata():
 							{
 								"billing_status": stat,
 								"docstatus":1,
-								"status":("not in",["Draft, Closed, Completed, Cancelled"])
+								"status":("not in",["Draft", "Closed", "Completed", "Cancelled"])
 							})
 		dataCount[stat] = len(fetch)
 
