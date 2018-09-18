@@ -96,7 +96,7 @@ def get_metadata():
 							{
 								"delivery_status": stat,
 								"docstatus":1,
-								"status":("not in",["Draft", "Closed", "Completed", "Cancelled"])
+								"status":("not in",["Draft", "Closed", "Completed", "Cancelled"]) 
 							})
 		dataCount[stat] = len(fetch)
 
@@ -296,7 +296,7 @@ def get_customer(query='',sort='',page=0):
 
 # ========================================================SALES ORDER====================================================
 @frappe.whitelist(allow_guest=False)
-def get_sales_order(status='',query='',sort='',page=0):
+def get_sales_order(status='',query='',sort='',delivery_status='%',billing_status='%',page=0):
 	seen = ""
 	data = []
 	
@@ -309,7 +309,9 @@ def get_sales_order(status='',query='',sort='',page=0):
 							filters = 
 							{
 								"status": ("IN", statuses),
-								f: ("LIKE", "%{}%".format(query))
+								f: ("LIKE", "%{}%".format(query)),
+								"delivery_status": ("LIKE",delivery_status),
+								"billing_status": ("LIKE",billing_status)
 							},
 							order_by=sort,
 							limit_page_length=LIMIT_PAGE,
