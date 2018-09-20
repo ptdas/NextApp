@@ -295,6 +295,20 @@ def get_customer(query='',sort='',page=0):
 	return data	
 
 # ========================================================SALES ORDER====================================================
+standard_fields_of_sales_order = ["customer_section","column_break0","title","naming_series","customer","customer_name","order_type","column_break1","amended_from","company","transaction_date","delivery_date","po_no","po_date","tax_id","contact_info","customer_address","address_display","contact_person","contact_display","contact_mobile","contact_email","col_break46","shipping_address_name","shipping_address","customer_group","territory","currency_and_price_list","currency","conversion_rate","column_break2","selling_price_list","price_list_currency","plc_conversion_rate","ignore_pricing_rule","items_section","items","section_break_31","column_break_33a","base_total","base_net_total","column_break_33","total","net_total","total_net_weight","taxes_section","taxes_and_charges","column_break_38","shipping_rule","section_break_40","taxes","sec_tax_breakup","other_charges_calculation","section_break_43","base_total_taxes_and_charges","column_break_46","total_taxes_and_charges","section_break_48","apply_discount_on","base_discount_amount","column_break_50","additional_discount_percentage","discount_amount","totals","base_grand_total","base_rounding_adjustment","base_rounded_total","base_in_words","column_break3","grand_total","rounding_adjustment","rounded_total","in_words","advance_paid","packing_list","packed_items","payment_schedule_section","payment_terms_template","payment_schedule","terms_section_break","tc_name","terms","more_info","project","party_account_currency","column_break_77","source","campaign","printing_details","language","letter_head","column_break4","select_print_heading","group_same_items","section_break_78","status","delivery_status","per_delivered","column_break_81","per_billed","billing_status","sales_team_section_break","sales_partner","column_break7","commission_rate","total_commission","section_break1","sales_team","subscription_section","from_date","to_date","column_break_108","subscription"]
+@frappe.whitelist(allow_guest=False)
+def get_field_custom_sales_order():
+	standard_fields = frappe.get_meta('Sales Order')
+
+	raw_fields = standard_fields.fields
+	fields = []
+	for rf in raw_fields:
+		if (rf.fieldname not in standard_fields_of_sales_order):
+			fields.append(rf.fieldname)
+
+
+	return fields
+
 @frappe.whitelist(allow_guest=False)
 def get_sales_order(status='',query='',sort='',delivery_status='%',billing_status='%',page=0):
 	seen = ""
