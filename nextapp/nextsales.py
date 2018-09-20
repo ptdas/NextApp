@@ -117,7 +117,7 @@ def get_metadata():
 
 
 	#invoice
-	status = ['Overdue','Unpaid','Paid']
+	status = ['Overdue','Unpaid','Paid','Return','Credit Note Issued','Cancelled']
 	data['invoice'] = dict()
 	dataINV = data['invoice']
 	dataINV['count'] = dict()
@@ -316,6 +316,8 @@ def get_sales_order(status='',query='',sort='',delivery_status='%',billing_statu
 							order_by=sort,
 							limit_page_length=LIMIT_PAGE,
 							limit_start=page)
+
+		
 		temp_seen, result_list = distinct(seen,data_filter)
 		for df in result_list:
 			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(df['name']),as_dict=1)
