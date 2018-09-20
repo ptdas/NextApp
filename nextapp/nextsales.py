@@ -310,6 +310,12 @@ def get_field_custom_sales_order():
 	return fields
 
 @frappe.whitelist(allow_guest=False)
+def get_field_sales_order():
+	standard_fields = frappe.get_meta('Sales Order')
+
+	return standard_fields
+
+@frappe.whitelist(allow_guest=False)
 def get_sales_order(status='',query='',sort='',delivery_status='%',billing_status='%',page=0):
 	seen = ""
 	data = []
