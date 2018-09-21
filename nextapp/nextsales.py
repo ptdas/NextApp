@@ -167,6 +167,16 @@ def get_metadata():
 
 	return data
 
+
+@frappe.whitelist(allow_guest=False)
+def get_sales_by_person():
+	data = dict()
+	data["sales_person"] = frappe.db.sql("SELECT st.sales_person AS 'Person Name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	data["sales_person_day"] = frappe.db.sql("SELECT st.sales_person AS 'Person Name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.posting_date = CURDATE() GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	data["sales_person_month"] = frappe.db.sql("SELECT st.sales_person AS 'Person Name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE DATE_FORMAT(si.posting_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	return data
+
+
 @frappe.whitelist(allow_guest=False)
 def get_sales_report(interval=0, tipe=''):
 
@@ -304,16 +314,35 @@ def get_field_custom_sales_order():
 	fields = []
 	for rf in raw_fields:
 		if (rf.fieldname not in standard_fields_of_sales_order):
-			fields.append(rf.fieldname)
+			if (rf.fieldtype == 'Data'):
+				fields.append(rf.fieldname)
 
 
 	return fields
 
-@frappe.whitelist(allow_guest=False)
-def get_field_sales_order():
-	standard_fields = frappe.get_meta('Sales Order')
 
-	return standard_fields
+
+@frappe.whitelist(allow_guest=False)
+def get_sales_order_naming_series():
+	so_meta = frappe.get_meta('Sales Order')
+
+	
+	raw_fields = so_meta.fields
+	fields = []
+	for rf in raw_fields:
+		if (rf.fieldname == 'naming_series'):
+			naming_series = rf.options.split('\n')
+			data = []
+			for ns in naming_series:
+				dataNamingSeries = {'naming_series':ns}
+				data.append(dataNamingSeries)
+
+			return data		
+			
+
+	return []
+
+
 
 @frappe.whitelist(allow_guest=False)
 def get_sales_order(status='',query='',sort='',delivery_status='%',billing_status='%',page=0):
