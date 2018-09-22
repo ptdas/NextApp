@@ -171,9 +171,9 @@ def get_metadata():
 @frappe.whitelist(allow_guest=False)
 def get_sales_by_person():
 	data = dict()
-	data["sales_person"] = frappe.db.sql("SELECT st.sales_person AS 'Person Name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
-	data["sales_person_day"] = frappe.db.sql("SELECT st.sales_person AS 'Person Name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.posting_date = CURDATE() GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
-	data["sales_person_month"] = frappe.db.sql("SELECT st.sales_person AS 'Person Name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE DATE_FORMAT(si.posting_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	data["sales_person_all_time"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	data["sales_person_day"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.posting_date = CURDATE() GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	data["sales_person_month"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE DATE_FORMAT(si.posting_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
 	return data
 
 
