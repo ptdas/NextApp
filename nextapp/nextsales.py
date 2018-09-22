@@ -16,7 +16,7 @@ from app.nextess.validation import *
 from validation import *
 
 LIMIT_PAGE = 20
-API_VERSION = 1.4
+API_VERSION = 1.5
 
 @frappe.whitelist(allow_guest=True)
 def me():
