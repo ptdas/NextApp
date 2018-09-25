@@ -7,7 +7,11 @@ import file_manager
 from file_manager import upload
 from base import validate_method
 from frappe.utils import get_fullname
+from frappe.utils import get_request_session
 import sys
+
+# ERPNEXT
+from erpnext.stock.get_item_details import get_item_details
 
 # CUSTOM METHOD
 from app.helper import *
@@ -171,9 +175,9 @@ def get_metadata():
 @frappe.whitelist(allow_guest=False)
 def get_sales_by_person():
 	data = dict()
-	data["sales_person_all_time"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
-	data["sales_person_day"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.posting_date = CURDATE() GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
-	data["sales_person_month"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE DATE_FORMAT(si.posting_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	data["sales_person_all_time"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.docstatus = 1 GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	data["sales_person_day"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.docstatus = 1 AND si.posting_date = CURDATE() GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	data["sales_person_month"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.docstatus = 1 AND DATE_FORMAT(si.posting_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
 	return data
 
 
@@ -378,6 +382,31 @@ def get_sales_order(status='',query='',sort='',delivery_status='%',billing_statu
 @frappe.whitelist(allow_guest=False)
 def validate_sales_order(items):
 	return validate_warehouse(items)
+
+@frappe.whitelist(allow_guest=False)
+def update_stock_sales_order(so_name,customer,selling_price_list,price_list_currency,transaction_date,company, plc_conversion_rate, conversion_rate):
+	data_sales_item = frappe.db.sql("SELECT * FROM `tabSales Order Item` WHERE parent='{}'".format(so_name),as_dict=1)
+	for dsi in data_sales_item:
+		args = {
+			"item_code": dsi['item_code'],
+			"warehouse": dsi['warehouse'],
+			"company": company,
+			"customer": customer,
+			"conversion_rate": dsi['conversion_factor'],
+			"selling_price_list": selling_price_list,
+			"price_list_currency": price_list_currency,
+			"plc_conversion_rate": plc_conversion_rate,
+			"doctype": "Sales Order",
+			"transaction_date": transaction_date,
+			"conversion_rate": conversion_rate,
+			"ignore_pricing_rule": 1
+		}
+
+		item_details = get_item_details(args)
+		frappe.db.sql("UPDATE `tabSales Order Item` SET actual_qty={}, project_qty={}, projected_qty={}, stock_qty={} WHERE name='{}'".format(item_details['actual_qty'],item_details['projected_qty'],item_details['projected_qty'],item_details['stock_qty'],dsi['name']))
+		frappe.db.commit()
+		
+	return data_sales_item
 
 
 # ========================================================SALES INVOICE====================================================
