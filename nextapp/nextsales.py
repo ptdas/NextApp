@@ -6,8 +6,8 @@ import time
 import file_manager
 from file_manager import upload
 from base import validate_method
-from frappe.utils import get_fullname
-from frappe.utils import get_request_session
+from frappe.utils import get_fullname, get_request_session
+from frappe import utils
 import sys
 
 # ERPNEXT
@@ -20,7 +20,7 @@ from app.nextess.validation import *
 from validation import *
 
 LIMIT_PAGE = 20
-API_VERSION = 1.6
+API_VERSION = 1.7
 
 @frappe.whitelist(allow_guest=True)
 def me():
@@ -175,9 +175,10 @@ def get_metadata():
 @frappe.whitelist(allow_guest=False)
 def get_sales_by_person():
 	data = dict()
+	today = utils.today()
 	data["sales_person_all_time"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.docstatus = 1 GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
-	data["sales_person_day"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.docstatus = 1 AND si.posting_date = CURDATE() GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
-	data["sales_person_month"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.docstatus = 1 AND DATE_FORMAT(si.posting_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') GROUP BY st.sales_person ORDER BY total_sales DESC", as_dict=True)
+	data["sales_person_day"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.docstatus = 1 AND si.posting_date = '{}' GROUP BY st.sales_person ORDER BY total_sales DESC".format(today), as_dict=True)
+	data["sales_person_month"] = frappe.db.sql("SELECT st.sales_person AS 'person_name', SUM(si.rounded_total * si.conversion_rate) * st.allocated_percentage / 100 AS total_sales FROM `tabSales Invoice` si JOIN `tabSales Team` st ON si.name = st.parent WHERE si.docstatus = 1 AND DATE_FORMAT(si.posting_date, '%Y-%m') = DATE_FORMAT('{}', '%Y-%m') GROUP BY st.sales_person ORDER BY total_sales DESC".format(today), as_dict=True)
 	return data
 
 
@@ -684,8 +685,8 @@ def check_item(item_code='',query=""):
 											"warehouse_name": ("LIKE","%{}%".format(query)),
 											"is_group":0
 										},
-										order_by="name",
-										limit_page_length=100000
+										order_by="modified",
+										limit_page_length=1000000
 										)
 	data_stocks = []
 	for data_warehouse in data_warehouses:

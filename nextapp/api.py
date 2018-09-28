@@ -1008,8 +1008,8 @@ def check_item(item_code='',query=""):
 											"warehouse_name": ("LIKE","%{}%".format(query)),
 											"is_group":0
 										},
-										order_by="name",
-										limit_page_length=100000
+										order_by="modified", 
+										limit_page_length=1000000
 										)
 	data_stocks = []
 	for data_warehouse in data_warehouses:
