@@ -20,7 +20,7 @@ from app.nextess.validation import *
 from validation import *
 
 LIMIT_PAGE = 20
-API_VERSION = 1.7
+API_VERSION = 1.8
 
 @frappe.whitelist(allow_guest=True)
 def me():
@@ -685,7 +685,7 @@ def check_item(item_code='',query=""):
 											"warehouse_name": ("LIKE","%{}%".format(query)),
 											"is_group":0
 										},
-										order_by="modified ASC",
+										order_by="modified DESC",
 										limit_page_length=1000000
 										)
 	data_stocks = []
@@ -717,7 +717,7 @@ def get_warehouse(company='',query='',sort='',page=0):
 								"company":company,
 								f: ("LIKE", "%{}%".format(query))
 							},
-							order_by=sort,
+							order_by="modified DESC",
 							limit_page_length=LIMIT_PAGE,
 							limit_start=page)
 		temp_seen, result_list = distinct(seen,data_filter)
