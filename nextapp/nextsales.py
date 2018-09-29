@@ -194,9 +194,13 @@ def get_sales_report(interval=0, tipe=''):
 	data['weekly'] = []
 	data['monthly'] = []
 
+	today = frappe.utils.today()
+
 	if (tipe == 'daily' or tipe == ''):
+
 		#daily total sales
-		daily = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS Y, daily.day AS X FROM (SELECT DATE_FORMAT(NOW() - INTERVAL (1 + {}) DAY,'%e %b') AS day UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (2 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (3 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (4 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (5 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (6 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT(NOW() - INTERVAL (7 + {}) DAY,'%e %b')) daily LEFT JOIN (SELECT SUM(si.rounded_total * si.conversion_rate) AS total, DATE_FORMAT(si.posting_date,'%e %b') as posting_date FROM `tabSales Invoice` si WHERE docstatus != 0 AND si.posting_date >= (SELECT DATE(NOW() - INTERVAL (7 + {}) DAY)) AND si.posting_date <= (SELECT DATE(NOW() - INTERVAL (1 + {}) DAY)) GROUP BY posting_date) sales ON sales.posting_date = daily.day;".format(day, day, day, day, day, day, day, day, day),as_dict=1)
+		daily = frappe.db.sql("SELECT COALESCE(sales.total, 0) AS Y, daily.day AS X FROM (SELECT DATE_FORMAT('{}' - INTERVAL (0 + {}) DAY,'%e %b') AS day UNION ALL SELECT DATE_FORMAT('{}' - INTERVAL (1 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT('{}' - INTERVAL (2 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT('{}' - INTERVAL (3 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT('{}' - INTERVAL (4 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT('{}' - INTERVAL (5 + {}) DAY,'%e %b') UNION ALL SELECT DATE_FORMAT('{}' - INTERVAL (6 + {}) DAY,'%e %b')) daily LEFT JOIN (SELECT SUM(si.rounded_total * si.conversion_rate) AS total, DATE_FORMAT(si.posting_date,'%e %b') as posting_date FROM `tabSales Invoice` si WHERE docstatus != 0 AND si.posting_date >= (SELECT ('{}' - INTERVAL (7 + {}) DAY)) AND si.posting_date <= (SELECT ('{}' - INTERVAL (1 + {}) DAY)) GROUP BY posting_date) sales ON sales.posting_date = daily.day;".format(today, day, today, day, today, day, today, day, today, day, today, day, today, day, today, day, today, day),as_dict=1)
+		# raw_daily = frappe.db.sql("SELECT SUM(rounded_total * conversion_rate) as total, DATEDIFF(posting_date, '2018-09-01') FROM `tabSales Invoice` WHERE posting_date >= '2018-09-01' AND posting_date <= '2018-09-07' GROUP BY posting_date")
 		data["daily"] = daily
 
 	if (tipe == 'weekly' or tipe == ''):
