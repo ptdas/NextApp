@@ -17,7 +17,7 @@ bench get-app nextapp https://github.com/ptdas/NextApp
 2. Install the app  
 You need to install the app into your site
 ```
-bench --site [sitename] install-app erpnext
+bench --site [sitename] install-app nextapp
 ```
 sitename : your existing sitename
 
@@ -32,7 +32,7 @@ sudo supervisorctl reload
 We have already publish our app in Android Playstore and AppStore [Comming Soon]
 
 Here's list of our app :
-## Next Sales API v1.2
+## Next Sales API v1.9
 This app will organize all of your Sales Order, Invoice, Lead, Quotation and Opportunity
 Fun way to taking order and mapping your customer to boost your company sales
 
