@@ -81,12 +81,12 @@ app_license = "ptdas@copyright"
 
 doc_events = {
 	"Leave Application": {
-		"after_insert": "nextapp.next_app.next_ess.notification.leave_application_approval",
-		"on_submit": "nextapp.next_app.next_ess.notification.leave_application_confirmation"
+		"after_insert": "nextapp.app.nextess.notification.leave_application_approval",
+		"on_submit": "nextapp.app.nextess.notification.leave_application_confirmation"
 	},
 	"Expense Claim": {
-		"after_insert": "nextapp.next_app.next_ess.notification.expense_claim_approval",
-		"on_submit": "nextapp.next_app.next_ess.notification.expense_claim_confirmation"
+		"after_insert": "nextapp.app.nextess.notification.expense_claim_approval",
+		"on_submit": "nextapp.app.nextess.notification.expense_claim_confirmation"
 	} 
 }
 

@@ -275,11 +275,10 @@ def get_customer_sales(query='',last_day=0, sort='',page=0):
 		data.extend(result_list)
 
 	for d in data:
-		data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(d['name']),as_dict=1)
+		data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(escape_string(d['name'])),as_dict=1)
 		d['sales_persons'] = data_sales
-		
 		now = frappe.utils.now()
-		fetchTotalSales  = frappe.db.sql("SELECT COALESCE(SUM(rounded_total * conversion_rate),0) FROM `tabSales Invoice` WHERE docstatus = 1 AND customer = '{}' AND posting_date BETWEEN DATE(STR_TO_DATE('{}','%Y-%m-%d %H:%i:%s') - INTERVAL {} DAY AND STR_TO_DATE('{}','%Y-%m-%d %H:%i:%s')".format(d["name"],now,last_day,now))
+		fetchTotalSales  = frappe.db.sql("SELECT COALESCE(SUM(rounded_total * conversion_rate),0) FROM `tabSales Invoice` WHERE docstatus = 1 AND customer = '{}' AND posting_date BETWEEN DATE(STR_TO_DATE('{}','%Y-%m-%d %H:%i:%s') - INTERVAL {} DAY) AND STR_TO_DATE('{}','%Y-%m-%d %H:%i:%s')".format(d["name"],now,last_day,now))
 		if (len(fetchTotalSales) > 0):
 			d["last_total_sales"] = fetchTotalSales[0][0]
 
@@ -306,7 +305,7 @@ def get_customer(query='',sort='',page=0):
 							limit_start=page)
 		temp_seen, result_list = distinct(seen,data_filter)
 		for df in result_list:
-			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(df['name']),as_dict=1)
+			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(escape_string(escape_string(df['name']))),as_dict=1)
 			df['sales_persons'] = data_sales
 		seen = temp_seen
 		data.extend(result_list)
@@ -383,7 +382,7 @@ def get_sales_order(status='',query='',sort='',delivery_status='%',billing_statu
 		
 		temp_seen, result_list = distinct(seen,data_filter)
 		for df in result_list:
-			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(df['name']),as_dict=1)
+			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(escape_string(df['name'])),as_dict=1)
 			df['sales_persons'] = data_sales
 		seen = temp_seen
 		data.extend(result_list)
@@ -395,7 +394,7 @@ def validate_sales_order(items):
 
 @frappe.whitelist(allow_guest=False)
 def update_stock_sales_order(so_name,customer,selling_price_list,price_list_currency,transaction_date,company, plc_conversion_rate, conversion_rate):
-	data_sales_item = frappe.db.sql("SELECT * FROM `tabSales Order Item` WHERE parent='{}'".format(so_name),as_dict=1)
+	data_sales_item = frappe.db.sql("SELECT * FROM `tabSales Order Item` WHERE parent='{}'".format(escape_string(so_name)),as_dict=1)
 	for dsi in data_sales_item:
 		args = {
 			"item_code": dsi['item_code'],
@@ -413,7 +412,7 @@ def update_stock_sales_order(so_name,customer,selling_price_list,price_list_curr
 		}
 
 		item_details = get_item_details(args)
-		frappe.db.sql("UPDATE `tabSales Order Item` SET actual_qty={}, project_qty={}, projected_qty={}, stock_qty={} WHERE name='{}'".format(item_details['actual_qty'],item_details['projected_qty'],item_details['projected_qty'],item_details['stock_qty'],dsi['name']))
+		frappe.db.sql("UPDATE `tabSales Order Item` SET actual_qty={}, project_qty={}, projected_qty={}, stock_qty={} WHERE name='{}'".format(item_details['actual_qty'],item_details['projected_qty'],item_details['projected_qty'],item_details['stock_qty'],escape_string(dsi['name'])))
 		frappe.db.commit()
 		
 	return data_sales_item
@@ -442,7 +441,7 @@ def get_sales_invoice(status='',query='',sort='',page=0):
 							limit_start=page)
 		temp_seen, result_list = distinct(seen,data_filter)
 		for df in result_list:
-			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(df['name']),as_dict=1)
+			data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(escape_string(df['name'])),as_dict=1)
 			df['sales_persons'] = data_sales
 		seen = temp_seen
 		data.extend(result_list)
