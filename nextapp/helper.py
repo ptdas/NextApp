@@ -1,3 +1,8 @@
+import re
+
+def escape_string(string):
+	return re.escape(string)
+
 def distinct(seen, new_list):
 	temp_seen = seen
 	result_list = []
