@@ -278,7 +278,8 @@ def get_customer_sales(query='',last_day=0, sort='',page=0):
 		data_sales = frappe.db.sql("SELECT * FROM `tabSales Team` WHERE parent='{}'".format(d['name']),as_dict=1)
 		d['sales_persons'] = data_sales
 		
-		fetchTotalSales  = frappe.db.sql("SELECT COALESCE(SUM(rounded_total * conversion_rate),0) FROM `tabSales Invoice` WHERE docstatus = 1 AND customer = '{}' AND posting_date BETWEEN DATE(NOW()) - INTERVAL {} DAY AND NOW()".format(d["name"],last_day))
+		now = frappe.utils.now()
+		fetchTotalSales  = frappe.db.sql("SELECT COALESCE(SUM(rounded_total * conversion_rate),0) FROM `tabSales Invoice` WHERE docstatus = 1 AND customer = '{}' AND posting_date BETWEEN DATE(STR_TO_DATE('{}','%Y-%m-%d %H:%i:%s') - INTERVAL {} DAY AND STR_TO_DATE('{}','%Y-%m-%d %H:%i:%s')".format(d["name"],now,last_day,now))
 		if (len(fetchTotalSales) > 0):
 			d["last_total_sales"] = fetchTotalSales[0][0]
 
