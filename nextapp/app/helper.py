@@ -1,7 +1,6 @@
-import re
 
 def escape_string(string):
-	return re.escape(string)
+	return string.replace("'","''")
 
 def distinct(seen, new_list):
 	temp_seen = seen
