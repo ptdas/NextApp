@@ -9,6 +9,7 @@ from base import validate_method
 from frappe.utils import get_fullname, get_request_session
 from frappe import utils
 import sys
+from frappe.utils import get_site_name
 
 # ERPNEXT
 from erpnext.stock.get_item_details import get_item_details
@@ -171,6 +172,14 @@ def get_metadata():
 
 	return data
 
+@frappe.whitelist(allow_guest=False)
+def get_sales_person():
+	user = frappe.session.user
+	data_sales_person = frappe.db.sql("SELECT * FROM `tabSales Person` WHERE employee=(SELECT name FROM `tabEmployee` WHERE user_id='{}')".format(user),as_dict=True)
+	if len(data_sales_person) > 0:
+		return data_sales_person[0]
+	return {}
+
 
 @frappe.whitelist(allow_guest=False)
 def get_sales_by_person():
@@ -282,7 +291,18 @@ def get_customer_sales(query='',last_day=0, sort='',page=0):
 		if (len(fetchTotalSales) > 0):
 			d["last_total_sales"] = fetchTotalSales[0][0]
 
+
+		fetchDeposit = frappe.db.sql("SELECT SUM(unallocated_amount) FROM `tabPayment Entry` WHERE party = '{}'".format(d['customer_name']))
+		d["deposit_amount"] = fetchDeposit[0][0]
+
 	return data
+
+@frappe.whitelist(allow_guest=False)
+def get_customer_deposit(customer):
+	d = dict()
+	fetchDeposit = frappe.db.sql("SELECT SUM(unallocated_amount) FROM `tabPayment Entry` WHERE party = '{}'".format(customer))
+	d["deposit_amount"] = fetchDeposit[0][0]
+	return d
 
 # ========================================================CUSTOMER====================================================
 @frappe.whitelist(allow_guest=False)
@@ -378,7 +398,6 @@ def get_sales_order(status='',query='',sort='',delivery_status='%',billing_statu
 							order_by=sort,
 							limit_page_length=LIMIT_PAGE,
 							limit_start=page)
-
 		
 		temp_seen, result_list = distinct(seen,data_filter)
 		for df in result_list:
@@ -387,6 +406,21 @@ def get_sales_order(status='',query='',sort='',delivery_status='%',billing_statu
 		seen = temp_seen
 		data.extend(result_list)
 	return data
+
+@frappe.whitelist(allow_guest=False)
+def get_specified_sales_order(name):
+	doc = frappe.get_doc("Sales Order",name)
+	customer_co
+	for item in doc.items:
+		item_group = frappe.get_value("Item",item.item_code,"item_group")
+		item.set('item_group',item_group)
+
+	return doc
+
+@frappe.whitelist(allow_guest=False)
+def get_contact_customer(customer):
+	data = frappe.get_doc("Customer",customer)
+	return {"mobile_no":data.sms_no}
 
 @frappe.whitelist(allow_guest=False)
 def validate_sales_order(items):
@@ -412,7 +446,37 @@ def update_stock_sales_order(so_name,customer,selling_price_list,price_list_curr
 		}
 
 		item_details = get_item_details(args)
-		frappe.db.sql("UPDATE `tabSales Order Item` SET actual_qty={}, project_qty={}, projected_qty={}, stock_qty={} WHERE name='{}'".format(item_details['actual_qty'],item_details['projected_qty'],item_details['projected_qty'],item_details['stock_qty'],escape_string(dsi['name'])))
+		site_name = get_site_name(frappe.local.request.host)
+		if 'mirage' in site_name:
+			frappe.db.sql("UPDATE `tabSales Order Item` SET actual_qty={}, project_qty={}, projected_qty={}, stock_qty={} WHERE name='{}'".format(item_details['actual_qty'],item_details['projected_qty'],item_details['projected_qty'],item_details['stock_qty'],escape_string(dsi['name'])))
+		else:
+			frappe.db.sql("UPDATE `tabSales Order Item` SET actual_qty={}, projected_qty={}, stock_qty={} WHERE name='{}'".format(item_details['actual_qty'],item_details['projected_qty'],item_details['stock_qty'],escape_string(dsi['name'])))
+		frappe.db.commit()
+		
+	return data_sales_item
+
+
+@frappe.whitelist(allow_guest=False)
+def update_stock_default_sales_order(so_name,customer,selling_price_list,price_list_currency,transaction_date,company, plc_conversion_rate, conversion_rate):
+	data_sales_item = frappe.db.sql("SELECT * FROM `tabSales Order Item` WHERE parent='{}'".format(escape_string(so_name)),as_dict=1)
+	for dsi in data_sales_item:
+		args = {
+			"item_code": dsi['item_code'],
+			"warehouse": dsi['warehouse'],
+			"company": company,
+			"customer": customer,
+			"conversion_rate": dsi['conversion_factor'],
+			"selling_price_list": selling_price_list,
+			"price_list_currency": price_list_currency,
+			"plc_conversion_rate": plc_conversion_rate,
+			"doctype": "Sales Order",
+			"transaction_date": transaction_date,
+			"conversion_rate": conversion_rate,
+			"ignore_pricing_rule": 1
+		}
+
+		item_details = get_item_details(args)
+		frappe.db.sql("UPDATE `tabSales Order Item` SET actual_qty={}, projected_qty={}, stock_qty={} WHERE name='{}'".format(item_details['actual_qty'],item_details['projected_qty'],item_details['stock_qty'],escape_string(dsi['name'])))
 		frappe.db.commit()
 		
 	return data_sales_item
@@ -462,6 +526,56 @@ def get_item(is_sales_item='1',is_stock_item='1',ref='',sort='',page='0'):
 								"has_variants": 0,
 								"is_sales_item":is_sales_item,
 								"is_stock_item":is_stock_item,
+								f: ("LIKE", "%{}%".format(ref))
+							},
+							order_by=sort,
+							limit_page_length=LIMIT_PAGE,
+							limit_start=page)
+		temp_seen, result_list = distinct(seen,data_filter)
+		seen = temp_seen
+		data.extend(result_list)
+
+	for row in data:
+		row['product_bundle_item'] = list("")
+		if (row['is_stock_item'] == 0):
+			fetchBundleItem = frappe.get_list("Product Bundle Item", 
+							fields="*", 
+							filters = 
+							{
+								"parent":row['item_code']
+							},
+							limit_page_length=1000000)
+			data_bundle_item = list("")
+			for bundleItem in fetchBundleItem:
+				fetchBundleItemDetails = frappe.get_list("Item", 
+							fields="item_name", 
+							filters = 
+							{
+								"item_code":bundleItem['item_code']
+							})
+				bundleItem['item_name'] = ""
+				if (len(fetchBundleItemDetails) > 0):
+					bundleItem['item_name'] = fetchBundleItemDetails[0]['item_name']
+				data_bundle_item.append(bundleItem)
+			row['product_bundle_item'] = data_bundle_item
+	return data
+
+@frappe.whitelist(allow_guest=False)
+def get_item_by_item_group(item_group,is_sales_item='1',is_stock_item='1',ref='',sort='',page='0'): 
+	seen = ""
+	data = []
+
+	filters = ["item_name", "item_code"]
+
+	for f in filters:
+		data_filter = frappe.get_list("Item", 
+							fields="*", 
+							filters = 
+							{
+								"has_variants": 0,
+								"is_sales_item":is_sales_item,
+								"is_stock_item":is_stock_item,
+								"item_group":("LIKE",item_group),
 								f: ("LIKE", "%{}%".format(ref))
 							},
 							order_by=sort,

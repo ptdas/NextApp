@@ -241,6 +241,9 @@ def get_customer_sales(query='',last_day=0, sort='',page=0):
 		fetchTotalSales  = frappe.db.sql("SELECT SUM(rounded_total) FROM `tabSales Invoice` WHERE customer_name = '{}' AND posting_date BETWEEN DATE(NOW()) - INTERVAL {} DAY AND NOW()".format(d["customer_name"],last_day))
 		d["total_sales"] = fetchTotalSales[0]
 
+		fetchDeposit = frappe.db.sql("SELECT SUM(unallocated_amount) FROM `tabPayment Entry` WHERE party = '{}'".format(d['customer_name']))
+		d["deposit_amount"] = fetchDeposit[0]
+
 	return data
 
 
@@ -1036,7 +1039,6 @@ def get_warehouse(company='',query='',sort='',page=0):
 							fields="*", 
 							filters = 
 							{
-								"is_group":0,
 								"company":company,
 								f: ("LIKE", "%{}%".format(query))
 							},
@@ -1048,3 +1050,64 @@ def get_warehouse(company='',query='',sort='',page=0):
 		data.extend(result_list)
 	return data
 
+@frappe.whitelist(allow_guest=False)
+def upload_image_profile():
+	response = {}
+
+	req = frappe.local.form_dict
+	if (req == None):
+		return {}
+
+
+	user_id = get_user_id_by_session()
+	if (user_id == ''):
+		response['code'] = 417
+		response['message'] = 'Session user invalid'
+		response['data'] = None 
+		return response
+	req.filename = "profile_{}.jpg".format(user_id)
+
+
+	data = json.loads(req.data)
+	req.filedata = data['filedata']
+	req.role = data['role']
+	req.name = data['name']
+
+	# try:
+
+	frappe.db.sql("DELETE FROM `tabFile` WHERE attached_to_name='{}' AND attached_to_doctype='{}'".format(req.name,req.role))
+	frappe.db.commit()
+	
+	uploaded = upload(req.role,req.name,1)
+
+	response["code"] = 200
+	response["message"] = "Success"
+	response["data"] = uploaded
+
+
+	doc_user = frappe.get_doc(req.role,req.name)
+	doc_user.profile_photo = uploaded['file_url']
+	doc_user.submit()
+	frappe.db.commit()
+
+
+	# except Exception as e:
+	# 	response["code"] = 400
+	# 	response["message"] = e.message
+	# 	response["data"] = ""
+	# except UnboundLocalError as e:
+	# 	response["code"] = 401
+	# 	response["message"] = e.message
+	# 	response["data"] = ""
+
+	return response
+
+@frappe.whitelist(allow_guest=False)
+def get_top_item_report(interval=1, customer="", time=""):
+	if time == "day":
+		data = frappe.db.sql("SELECT item_code, SUM(qty) AS delivered_quantity FROM `tabDelivery Note Item` WHERE parent IN (SELECT name FROM `tabDelivery Note` WHERE status = 'Completed' AND customer = '{}' AND posting_date BETWEEN DATE(NOW() - INTERVAL {} DAY) AND DATE(NOW())) GROUP BY item_code ORDER BY SUM(qty) LIMIT 10".format(customer, interval), as_dict=True)
+	elif time == "month":
+		data = frappe.db.sql("SELECT item_code, SUM(qty) AS delivered_quantity FROM `tabDelivery Note Item` WHERE parent IN (SELECT name FROM `tabDelivery Note` WHERE status = 'Completed' AND customer = '{}' AND posting_date BETWEEN DATE(NOW() - INTERVAL {} MONTH) AND DATE(NOW())) GROUP BY item_code ORDER BY SUM(qty) LIMIT 10".format(customer, interval), as_dict=True)
+	elif time == "year":
+		data = frappe.db.sql("SELECT item_code, SUM(qty) AS delivered_quantity FROM `tabDelivery Note Item` WHERE parent IN (SELECT name FROM `tabDelivery Note` WHERE status = 'Completed' AND customer = '{}' AND posting_date BETWEEN DATE(NOW() - INTERVAL {} YEAR) AND DATE(NOW())) GROUP BY item_code ORDER BY SUM(qty) LIMIT 10".format(customer, interval), as_dict=True)
+	return data
