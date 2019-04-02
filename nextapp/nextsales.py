@@ -807,7 +807,7 @@ def check_item(item_code='',query=""):
 											"warehouse_name": ("LIKE","%{}%".format(query)),
 											"is_group":0
 										},
-										order_by="modified DESC",
+										order_by="warehouse_name ASC",
 										limit_page_length=1000000
 										)
 	data_stocks = []
