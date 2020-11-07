@@ -23,6 +23,11 @@ from validation import *
 LIMIT_PAGE = 20
 API_VERSION = 1.9
 
+# custom chandra
+@frappe.whitelist(allow_guest=True)
+def get_bin_data(item_code, warehouse):
+	return frappe.db.sql(""" SELECT actual_qty FROM `tabBin` WHERE item_code = "{}" AND warehouse = "{}" """.format(item_code, warehouse))
+
 @frappe.whitelist(allow_guest=True)
 def me():
 	me = frappe.session

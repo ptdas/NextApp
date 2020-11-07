@@ -101,12 +101,11 @@ def get_metadata(employee='%',company='',approver='%',is_sales="0",is_employee="
 				firstFetch = fetch[0]
 				dataCount[stat] = firstFetch[0]
 
- 	else:
- 		fetchCurrency = frappe.get_list("Currency",
+	else:
+		fetchCurrency = frappe.get_list("Currency",
 							fields="symbol,name",
 							order_by="name")
 		data['currency'] = fetchCurrency
-
 		#delivery note
 		status = ['Draft', 'To Bill','To Bill','Completed','Cancelled','Closed']
 		data['delivery_note'] = dict()
